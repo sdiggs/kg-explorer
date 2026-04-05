@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Climate Data · Knowledge Graph Explorer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08101e;--bg2:#0d1929;--bg3:#152238;
+  --border:#1e3050;--border2:#2a4570;
+  --text:#b8cce4;--dim:#4a6580;
+  --cyan:#38bdf8;--amber:#f59e0b;--green:#34d399;--red:#f87171;--purple:#a78bfa;
+  --mono:'Space Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+  --panel:268px;
+}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--sans);height:100vh;
+  display:grid;
+  grid-template-rows:48px 1fr 32px;
+  grid-template-columns:var(--panel) 1fr;
+  grid-template-areas:"hdr hdr" "side canvas" "foot foot";
+  overflow:hidden;
+}
+header{grid-area:hdr;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:14px}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--border2);transition:all .4s;flex-shrink:0}
+.hdot.live{background:var(--green);box-shadow:0 0 8px var(--green)}
+header h1{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--cyan);text-transform:uppercase;flex-shrink:0}
+.hsep{width:1px;height:20px;background:var(--border)}
+.hsub{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.08em;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbadge{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:3px;border:1px solid var(--border2);color:var(--dim);flex-shrink:0}
+.hbadge.warn{color:var(--amber);border-color:var(--amber)}.hbadge.ok{color:var(--green);border-color:var(--green)}
+aside{grid-area:side;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+aside::-webkit-scrollbar{width:3px}aside::-webkit-scrollbar-thumb{background:var(--border)}
+.pnl{padding:13px;border-bottom:1px solid var(--border)}
+.plbl{font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--dim);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.plbl::after{content:'';flex:1;height:1px;background:var(--border)}
+.dz{border:1px dashed var(--border2);border-radius:5px;padding:18px 12px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)}
+.dz:hover,.dz.dza{border-color:var(--cyan);background:rgba(56,189,248,.05)}
+.dzi{font-size:22px;margin-bottom:6px;opacity:.5}
+.dzt{font-size:11px;color:var(--dim);line-height:1.55}
+.dzt strong{color:var(--cyan);font-weight:500}
+.flist{margin-top:8px;display:flex;flex-direction:column;gap:3px;max-height:120px;overflow-y:auto}
+.fi{display:flex;align-items:center;gap:6px;padding:4px 7px;border-radius:3px;background:var(--bg3);font-size:10px;font-family:var(--mono)}
+.fi .ok{color:var(--green);flex-shrink:0}.fi .er{color:var(--red);flex-shrink:0}
+.fi .nm{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.fi .mt{color:var(--dim);flex-shrink:0}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sbox{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:8px 10px;text-align:center}
+.snum{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--cyan);line-height:1}
+.slbl{font-size:9px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-top:3px}
+.trow{display:flex;gap:4px;margin-bottom:10px}
+.tb{flex:1;padding:5px 4px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;color:var(--dim);font-size:10px;font-family:var(--mono);cursor:pointer;transition:all .15s;text-align:center}
+.tb:hover:not(.on){border-color:var(--border2);color:var(--text)}.tb.on{background:var(--cyan);border-color:var(--cyan);color:var(--bg);font-weight:700}
+.tb.on.lv{background:var(--purple);border-color:var(--purple)}.tb.on.rs{background:var(--amber);border-color:var(--amber)}
+.clbl{font-size:10px;color:var(--dim);margin-bottom:5px;display:block}
+.ckrow{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:11px}
+.ckrow input{accent-color:var(--cyan);width:13px;height:13px}
+input[type=range]{width:100%;accent-color:var(--cyan)}
+.sval{font-family:var(--mono);font-size:10px;color:var(--cyan);text-align:right;margin-top:2px}
+.litem{display:flex;align-items:center;gap:9px;padding:4px 0;font-size:11px}
+.ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.btn{display:block;width:100%;padding:7px 10px;background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .15s;text-align:center;margin-top:5px}
+.btn:hover{border-color:var(--cyan);color:var(--cyan)}.btn.primary{background:var(--cyan);color:var(--bg);border-color:var(--cyan);font-weight:700}.btn.primary:hover{opacity:.88}
+.schema-tag{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:2px;border:1px solid var(--border2);color:var(--dim);margin-left:4px}
+.schema-tag.v1{color:#fb923c;border-color:#fb923c}
+.schema-tag.v2{color:var(--cyan);border-color:var(--cyan)}
+.schema-tag.v3{color:var(--purple);border-color:var(--purple)}
+.schema-tag.v4{color:var(--green);border-color:var(--green)}
+#gwrap{grid-area:canvas;position:relative;background:var(--bg);overflow:hidden}
+#smount{width:100%;height:100%}
+#splash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:20;transition:opacity .4s}
+#splash.gone{opacity:0;pointer-events:none}
+.scard{border:1px dashed var(--border2);border-radius:10px;padding:52px 72px;text-align:center;transition:all .2s}
+.scard.dza{border-color:var(--cyan);background:rgba(56,189,248,.04)}
+.swave{font-size:52px;margin-bottom:18px}
+.scard h2{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.18em;color:var(--cyan);text-transform:uppercase;margin-bottom:10px}
+.scard p{font-size:13px;color:var(--dim);line-height:1.65;max-width:320px}
+#tip{position:fixed;background:var(--bg2);border:1px solid var(--border2);border-radius:5px;padding:10px 13px;font-size:11px;pointer-events:none;z-index:200;display:none;max-width:290px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.ttl{font-family:var(--mono);font-size:12px;color:var(--cyan);margin-bottom:7px;word-break:break-word;line-height:1.4}
+.tr{display:flex;gap:8px;padding:2px 0}
+.tk{color:var(--dim);min-width:86px;flex-shrink:0;font-size:10px}
+.tv{color:var(--text);font-family:var(--mono);font-size:10px}
+.trbar{display:flex;align-items:center;gap:7px;margin:5px 0 2px}
+.ttrack{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.tfill{height:100%;border-radius:2px}
+footer{grid-area:foot;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:18px;font-family:var(--mono);font-size:10px;color:var(--dim)}
+.fv{color:var(--text)}
+#lst{margin-left:auto;transition:color .3s}
+#lst.running{color:var(--amber)}#lst.done{color:var(--green)}
+.hide{display:none!important}
+#fpick{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="hdot" id="hdot"></div>
+  <h1>KG Explorer</h1>
+  <div class="hsep"></div>
+  <div class="hsub" id="hsub">Drop JSON files — all schema versions supported</div>
+  <div class="hbadge" id="hbadge">NO DATA</div>
+  <div class="hbadge" id="hprivate" style="display:none;color:var(--purple);border-color:var(--purple)">+ PRIVATE</div>
+</header>
+<aside>
+  <div class="pnl">
+    <div class="plbl">Data Source</div>
+    <div class="dz" id="sdrop">
+      <div class="dzi">📂</div>
+      <div class="dzt"><strong>Drop JSON files</strong> here<br>or click to browse · all versions OK</div>
+    </div>
+    <div class="flist" id="flist"></div>
+    <input type="file" id="fpick" multiple accept=".json">
+  </div>
+
+  <div class="pnl hide" id="errlog" style="background:rgba(248,113,113,.06);border-color:#f87171">
+    <div class="plbl" style="color:var(--red)">Parse Errors</div>
+    <div class="errlog-body" style="max-height:160px;overflow-y:auto"></div>
+    <button class="btn" id="bclearerr" style="margin-top:8px;border-color:var(--red);color:var(--red)">Clear</button>
+  </div>
+  <div class="pnl hide" id="pstats">
+    <div class="plbl">Graph</div>
+    <div class="sgrid">
+      <div class="sbox"><div class="snum" id="sn">0</div><div class="slbl">Nodes</div></div>
+      <div class="sbox"><div class="snum" id="se">0</div><div class="slbl">Edges</div></div>
+      <div class="sbox"><div class="snum" id="sd">0</div><div class="slbl">Datasets</div></div>
+      <div class="sbox"><div class="snum" id="sp">0</div><div class="slbl">People</div></div>
+    </div>
+  </div>
+  <div class="pnl hide" id="pview">
+    <div class="plbl">View Mode</div>
+    <span class="clbl">Graph Structure</span>
+    <div class="trow" id="vtog">
+      <button class="tb on" data-v="bipartite">Bipartite</button>
+      <button class="tb" data-v="person">People</button>
+      <button class="tb" data-v="dataset">Datasets</button>
+    </div>
+    <span class="clbl">Color By</span>
+    <div class="trow" id="ctog">
+      <button class="tb on" data-c="type">Type</button>
+      <button class="tb lv" data-c="community">Louvain</button>
+      <button class="tb rs" data-c="risk">Risk</button>
+    </div>
+    <label class="ckrow"><input type="checkbox" id="cklabels" checked><span>Show labels</span></label>
+    <label class="ckrow"><input type="checkbox" id="ckorgs"><span>Include organizations</span></label>
+    <div style="margin-top:8px">
+      <span class="clbl">Min. shared connections (projection)</span>
+      <input type="range" id="sshared" min="1" max="10" value="1">
+      <div class="sval" id="sval">≥ 1</div>
+    </div>
+  </div>
+  <div class="pnl hide" id="pact">
+    <div class="plbl">Actions</div>
+    <button class="btn primary" id="brelayout">↺  Re-run Layout</button>
+    <button class="btn" id="breset">⌖  Reset Camera</button>
+    <button class="btn" id="bexport">↓  Export GEXF</button>
+    <button class="btn" id="bbundle" style="border-color:var(--purple);color:var(--purple)">⬡  Export data.json Bundle</button>
+    <div style="font-size:10px;color:var(--dim);margin-top:6px;line-height:1.5">
+      Exports all loaded files as a bundle for GitHub hosting. Upload the result as <code style="color:var(--cyan)">data.json</code> in your repo.
+    </div>
+  </div>
+  <div class="pnl hide" id="pleg">
+    <div class="plbl">Legend</div>
+    <div class="litem"><div class="ldot" style="background:var(--cyan)"></div><span>Dataset</span></div>
+    <div class="litem"><div class="ldot" style="background:var(--amber)"></div><span>Person</span></div>
+    <div class="litem"><div class="ldot" style="background:var(--green)"></div><span>Organization</span></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--dim);line-height:1.6">
+      Risk color: <span style="color:var(--green)">■</span> Low &nbsp;
+      <span style="color:var(--amber)">■</span> Med &nbsp;
+      <span style="color:var(--red)">■</span> High
+    </div>
+  </div>
+</aside>
+<div id="gwrap">
+  <div id="splash">
+    <div class="scard" id="scard">
+      <div class="swave">🌊</div>
+      <h2>Drop JSON Files to Begin</h2>
+      <p id="splash-msg">Loading shared data...</p>
+    </div>
+  </div>
+  <div id="smount"></div>
+</div>
+<footer>
+  <span>NODES <span class="fv" id="fn">--</span></span>
+  <span>EDGES <span class="fv" id="fe">--</span></span>
+  <span>FILES <span class="fv" id="ff">0</span></span>
+  <span id="lst">READY</span>
+</footer>
+<div id="tip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/2.4.0/sigma.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+//  PALETTE & ROLE WEIGHTS
+// ═══════════════════════════════════════════════════════
+const COL = {
+  dataset:'#38bdf8', person:'#f59e0b', org:'#34d399',
+  rLow:'#34d399', rMed:'#f59e0b', rHigh:'#f87171', edge:'#1a2e4a',
+  comm:['#38bdf8','#f59e0b','#a78bfa','#34d399','#f87171',
+        '#fb923c','#e879f9','#2dd4bf','#facc15','#60a5fa',
+        '#a3e635','#f472b6','#818cf8','#fca5a5','#6ee7b7'],
+};
+
+// ═══════════════════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════════════════
+const S = {
+  files:[], graph:null, renderer:null, communities:{},
+  view:'bipartite', color:'type',
+  labels:true, orgs:false, minShared:1,
+};
+
+// ═══════════════════════════════════════════════════════
+//  UNIVERSAL SCHEMA ACCESSORS
+//  Handles v1 (entities/relationships), v2.0, v2.2,
+//  v2.x-extracted (primary_dataset_name / manages[]),
+//  v3 (basicInformation / responsibilitiesAndRoles),
+//  v4 (dataGovernance / riskAssessment.rStarCompositeScore)
+// ═══════════════════════════════════════════════════════
+
+function personName(p) {
+  return p.name
+      || p.basicInformation?.name
+      || p.properties?.name
+      || p.Title
+      || 'Unknown';
+}
+
+function personOrg(p) {
+  return p.worksForId
+      || p.professionalAffiliation?.primaryEmployer
+      || p.professionalAffiliation?.primaryOrganizationId
+      || p.properties?.department
+      || p.Organization_or_Primary_Organization
+      || '';
+}
+
+function personOrcid(p) {
+  return p.orcid
+      || p.persistentIdentifiers?.ORCID
+      || p.persistentIdentifiers?.orcid
+      || p.properties?.orcid
+      || '';
+}
+
+function personJobTitle(p) {
+  return p.jobTitle
+      || p.basicInformation?.jobTitle
+      || p.properties?.title
+      || '';
+}
+
+function personSepRisk(p) {
+  // Returns 0-100 or null
+  let v = p.employmentStatus?.currentStatus?.probabilityOfImminentSeparation?.percentage
+       ?? p.employmentStatus?.probabilityOfImminentSeparation?.percentage
+       ?? p.careerStatus?.separationRisk?.probabilityNextYear
+       ?? p.properties?.status?.retirementRisk;
+  if (v == null) return null;
+  if (typeof v === 'string') v = parseFloat(v.replace('%',''));
+  if (!isNaN(v) && v <= 1.0) v = v * 100;
+  return isNaN(v) ? null : Math.round(v);
+}
+
+function personKnowledgeLevel(p) {
+  return p.institutionalKnowledgeLevel
+      || p.expertise?.institutionalKnowledgeLevel
+      || p.properties?.expertise?.level
+      || '';
+}
+
+function personManagedDatasets(p) {
+  const ids = new Set();
+  // v2-extracted: manages[] and managedDatasets[]
+  for (const arr of [p.manages, p.managedDatasets]) {
+    if (Array.isArray(arr)) arr.forEach(x => { if (typeof x === 'string') ids.add(x); });
+  }
+  // v2.0/2.2: criticalResponsibilities [{dataset_xxx: role}, ...]
+  if (Array.isArray(p.criticalResponsibilities)) {
+    p.criticalResponsibilities.forEach(r => {
+      if (r && typeof r === 'object') {
+        Object.keys(r).forEach(k => { if (k.startsWith('dataset')) ids.add(k); });
+      }
+    });
+  }
+  // v3/v4: responsibilitiesAndRoles.criticalDatasets [{datasetId, role}] or [id strings]
+  const cds = p.responsibilitiesAndRoles?.criticalDatasets
+           || p.responsibilitiesAndRoles?.managedDatasets;
+  if (Array.isArray(cds)) {
+    cds.forEach(cd => {
+      if (typeof cd === 'string') ids.add(cd);
+      if (typeof cd === 'object' && cd) {
+        if (cd.datasetId) ids.add(cd.datasetId);
+        if (cd.id) ids.add(cd.id);
+      }
+    });
+  }
+  // Old format: Associated_Datasets[]
+  if (Array.isArray(p.Associated_Datasets)) {
+    p.Associated_Datasets.forEach(x => { if (typeof x === 'string') ids.add(x); });
+  }
+  return [...ids];
+}
+
+function datasetName(d) {
+  return d.primary_dataset_name  // v2-extracted interviews
+      || d.name                  // v2.0/2.2
+      || d.basicInformation?.name // v3/v4
+      || d.properties?.name      // v1
+      || 'Unnamed Dataset';
+}
+
+function datasetStewardIds(d) {
+  const ids = new Set();
+  if (d.dataStewardId) ids.add(d.dataStewardId);
+  if (d.dataGovernance?.dataStewardId) ids.add(d.dataGovernance.dataStewardId);
+  if (d.dataGovernance?.dataProducerId) ids.add(d.dataGovernance.dataProducerId);
+  const rp1 = d.criticalDependencies?.requiredPeople;
+  const rp2 = d.dependencies?.requiredPeople;
+  if (Array.isArray(rp1)) rp1.forEach(x => { if (typeof x === 'string') ids.add(x); });
+  if (Array.isArray(rp2)) rp2.forEach(x => { if (typeof x === 'string') ids.add(x); });
+  return [...ids];
+}
+
+function datasetRiskText(d) {
+  // Returns "Critical" | "High" | "Medium" | "Low" | null
+  return d.riskAssessment?.overallRiskLevel
+      || d.criticalityAssessment?.riskProbability
+      || d.criticalityAssessment?.preservationPriority
+      || d.properties?.metrics?.riskLevel
+      || null;
+}
+
+function datasetRStarScore(d) {
+  const v = d.riskAssessment?.rStarCompositeScore
+         ?? d.rStarScore ?? d.rstar_score;
+  if (v == null) return null;
+  return parseFloat(v) || null;
+}
+
+function riskTextToNum(txt) {
+  if (!txt) return null;
+  const t = txt.toLowerCase();
+  if (t.includes('critical')) return 95;
+  if (t.includes('high'))     return 75;
+  if (t.includes('medium') || t.includes('med')) return 45;
+  if (t.includes('low'))      return 20;
+  return null;
+}
+
+function riskToColor(score) {
+  // score 0-100
+  if (score == null) return null;
+  if (score >= 70) return COL.rHigh;
+  if (score >= 40) return lerp(COL.rMed, COL.rHigh, (score-40)/30);
+  return lerp(COL.rLow, COL.rMed, score/40);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCHEMA DETECTION & FILE PARSING
+// ═══════════════════════════════════════════════════════
+
+function detectSchemaVersion(raw) {
+  const ver = raw.metadata?.version;
+  if (raw.entities && raw.relationships) return 'v1';
+  if (ver === '1.0' && raw.entities) return 'v1';
+  const p0 = (raw.people||[])[0] || {};
+  if (p0.basicInformation || p0.responsibilitiesAndRoles || p0.careerStatus) {
+    return ver && parseFloat(ver) >= 4 ? 'v4' : 'v3';
+  }
+  if (p0.manages || p0.managedDatasets) return 'v2x'; // extracted interviews
+  return 'v2';
+}
+
+function parseFile(raw, filename) {
+  const schema = detectSchemaVersion(raw);
+  const people = [], datasets = [], orgs = [], edges = [];
+
+  if (schema === 'v1') {
+    // entities array + relationships array
+    const emap = {};
+    (raw.entities || []).forEach(e => { emap[e.id] = e; });
+
+    (raw.entities || []).forEach(e => {
+      const p = e.properties || {};
+      if (e.type === 'Person') {
+        people.push({
+          id: e.id, name: p.name || 'Unknown',
+          jobTitle: p.title || '', org: p.department || '',
+          sepRisk: p.status?.retirementRisk != null ? Math.round(p.status.retirementRisk * 100) : null,
+          knowledgeLevel: p.reputation || '',
+          manages: [],
+          schema,
+        });
+      } else if (e.type === 'Dataset') {
+        datasets.push({
+          id: e.id, title: p.name || 'Unnamed',
+          stewardIds: [],
+          riskScore: riskTextToNum(p.metrics?.riskLevel),
+          riskText: p.metrics?.riskLevel || '',
+          rstarScore: null,
+          schema,
+        });
+      } else if (e.type === 'Organization') {
+        orgs.push({ id: e.id, name: p.name || e.id, schema });
+      }
+    });
+
+    (raw.relationships || []).forEach(r => {
+      if (r.type === 'MANAGES')
+        edges.push({ from: r.source, to: r.target, label: 'manages', weight: 3 });
+      else if (r.type === 'WORKS_FOR')
+        edges.push({ from: r.source, to: r.target, label: 'works_for', weight: 1 });
+      else if (r.type === 'DEPENDS_ON')
+        edges.push({ from: r.source, to: r.target, label: 'depends_on', weight: 2 });
+    });
+
+  } else {
+    // v2 / v2x / v3 / v4 — all have separate people[], datasets[], organizations[]
+    (raw.people || []).forEach(p => {
+      people.push({
+        id: p.id,
+        name: personName(p),
+        jobTitle: personJobTitle(p),
+        org: personOrg(p),
+        sepRisk: personSepRisk(p),
+        knowledgeLevel: personKnowledgeLevel(p),
+        manages: personManagedDatasets(p),
+        schema,
+      });
+    });
+
+    (raw.datasets || []).forEach(d => {
+      datasets.push({
+        id: d.id,
+        title: datasetName(d),
+        stewardIds: datasetStewardIds(d),
+        riskScore: datasetRStarScore(d) ?? riskTextToNum(datasetRiskText(d)),
+        riskText: datasetRiskText(d) || '',
+        rstarScore: datasetRStarScore(d),
+        schema,
+      });
+    });
+
+    (raw.organizations || []).forEach(o => {
+      orgs.push({ id: o.id, name: o.name || o.id, schema });
+    });
+
+    // v1-style explicit dependency edges (some v3/v4 files have these too)
+    (raw.dependencies || []).forEach(dep => {
+      if (dep.sourceId && dep.targetId)
+        edges.push({ from: dep.sourceId, to: dep.targetId, label: dep.type || 'depends', weight: 1 });
+    });
+  }
+
+  return { people, datasets, orgs, edges, schema, filename };
+}
+
+// ═══════════════════════════════════════════════════════
+//  COMMUNITY DETECTION (label propagation)
+// ═══════════════════════════════════════════════════════
+function detectCommunities(g) {
+  if (g.order < 2) return {};
+  const lbl = {};
+  g.forEachNode(n => { lbl[n] = n; });
+  for (let i = 0; i < 60; i++) {
+    const nodes = g.nodes().sort(() => Math.random() - 0.5);
+    let changed = false;
+    for (const n of nodes) {
+      const freq = {};
+      g.forEachNeighbor(n, nb => { const l = lbl[nb]; freq[l] = (freq[l]||0)+1; });
+      if (Object.keys(freq).length) {
+        const best = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];
+        if (best !== lbl[n]) { lbl[n] = best; changed = true; }
+      }
+    }
+    if (!changed) break;
+  }
+  const uniq = [...new Set(Object.values(lbl))];
+  const res = {};
+  g.forEachNode(n => { res[n] = uniq.indexOf(lbl[n]); });
+  return res;
+}
+
+// ═══════════════════════════════════════════════════════
+//  FORCE LAYOUT (D3)
+// ═══════════════════════════════════════════════════════
+function applyLayout(g) {
+  const nodes = [], links = [];
+  g.forEachNode((n, a) => nodes.push({ id: n, sz: a.size || 6 }));
+  g.forEachEdge((e, a, src, tgt) => links.push({ source: src, target: tgt, w: a.weight || 1 }));
+  const nmap = Object.fromEntries(nodes.map(n => [n.id, n]));
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(70).strength(d => Math.min(.5, d.w*.1)))
+    .force('charge', d3.forceManyBody().strength(n => -100 - n.sz * 8))
+    .force('center', d3.forceCenter(0, 0))
+    .force('collision', d3.forceCollide(n => n.sz + 4))
+    .stop();
+  sim.tick(Math.min(220, Math.max(80, 400 - g.order)));
+  g.forEachNode(n => {
+    const nd = nmap[n];
+    if (nd) { g.setNodeAttribute(n,'x',nd.x||0); g.setNodeAttribute(n,'y',nd.y||0); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  AGGREGATORS
+// ═══════════════════════════════════════════════════════
+function allPeople()   { const s=new Set(),o=[]; S.files.forEach(f=>{f.people.forEach(p=>{if(!s.has(p.id)){s.add(p.id);o.push(p);}});}); return o; }
+function allDatasets() { const s=new Set(),o=[]; S.files.forEach(f=>{f.datasets.forEach(d=>{if(!s.has(d.id)){s.add(d.id);o.push(d);}});}); return o; }
+function allOrgs()     { const s=new Set(),o=[]; S.files.forEach(f=>{f.orgs.forEach(x=>{if(!s.has(x.id)){s.add(x.id);o.push(x);}});}); return o; }
+function allEdges()    { const o=[]; S.files.forEach(f=>{o.push(...f.edges);}); return o; }
+
+// ═══════════════════════════════════════════════════════
+//  GRAPH BUILD
+// ═══════════════════════════════════════════════════════
+function colorForRisk(node, attrs) {
+  const score = attrs.riskScore ?? attrs.sepRisk;
+  return riskToColor(score) || (attrs.ntype === 'dataset' ? COL.dataset : attrs.ntype === 'org' ? COL.org : COL.person);
+}
+
+function buildGraph() {
+  const g = new graphology.Graph({ multi: false });
+  const ppl = allPeople(), ds = allDatasets(), orgs = allOrgs(), edges = allEdges();
+
+  // ── ADD NODES ────────────────────────────────────────
+  if (S.view !== 'person') {
+    ds.forEach(d => {
+      g.addNode('ds|'+d.id, {
+        label: d.title, ntype:'dataset',
+        riskScore: d.riskScore, riskText: d.riskText, rstarScore: d.rstarScore,
+        schema: d.schema,
+        color: COL.dataset, size: 8, x:0, y:0,
+      });
+    });
+  }
+
+  if (S.view !== 'dataset') {
+    ppl.forEach(p => {
+      const pk = 'p|'+p.id;
+      if (!g.hasNode(pk)) {
+        g.addNode(pk, {
+          label: p.name, ntype:'person',
+          jobTitle: p.jobTitle, org: p.org,
+          sepRisk: p.sepRisk, knowledgeLevel: p.knowledgeLevel,
+          riskScore: p.sepRisk, schema: p.schema,
+          color: COL.person, size:6, x:0, y:0,
+        });
+      }
+      if (S.orgs && p.org) {
+        const oid = 'org|'+slug(p.org);
+        if (!g.hasNode(oid)) {
+          const orgObj = orgs.find(o => o.id === p.org);
+          g.addNode(oid, { label: orgObj?.name || p.org, ntype:'org', color:COL.org, size:5, x:0, y:0 });
+        }
+        tryEdge(g, pk, oid, { label:'affiliated', weight:.4, color: COL.edge });
+      }
+    });
+  }
+
+  // ── ADD EDGES ────────────────────────────────────────
+  if (S.view === 'bipartite') {
+    // 1. person.manages[] → datasets
+    ppl.forEach(p => {
+      p.manages.forEach(dsId => {
+        const pk = 'p|'+p.id, dk = 'ds|'+dsId;
+        if (g.hasNode(pk) && g.hasNode(dk))
+          tryEdge(g, pk, dk, { label:'manages', weight:3, color:COL.edge });
+      });
+    });
+    // 2. dataset.stewardIds[] → people
+    ds.forEach(d => {
+      d.stewardIds.forEach(pid => {
+        const dk = 'ds|'+d.id, pk = 'p|'+pid;
+        if (g.hasNode(dk) && g.hasNode(pk))
+          tryEdge(g, dk, pk, { label:'steward', weight:4, color:COL.edge });
+      });
+    });
+    // 3. explicit edges from v1 relationships or v3/v4 dependencies
+    edges.forEach(e => {
+      const sk = nodeKey(e.from, g), tk = nodeKey(e.to, g);
+      if (sk && tk) tryEdge(g, sk, tk, { label:e.label||'', weight:e.weight||1, color:COL.edge });
+    });
+
+  } else if (S.view === 'person') {
+    // Project onto people: share dataset → edge
+    const pds = {};
+    ppl.forEach(p => {
+      const pk = 'p|'+p.id;
+      pds[pk] = new Set(p.manages);
+      ds.forEach(d => {
+        if (d.stewardIds.includes(p.id)) pds[pk].add(d.id);
+      });
+    });
+    const keys = Object.keys(pds).filter(k => g.hasNode(k));
+    for (let i = 0; i < keys.length; i++)
+      for (let j = i+1; j < keys.length; j++) {
+        const shared = [...pds[keys[i]]].filter(x => pds[keys[j]].has(x)).length;
+        if (shared >= S.minShared)
+          tryEdge(g, keys[i], keys[j], { label: shared+' shared', weight:shared, color:COL.edge });
+      }
+
+  } else { // dataset projection
+    for (let i = 0; i < ds.length; i++)
+      for (let j = i+1; j < ds.length; j++) {
+        const ai = new Set([...ds[i].stewardIds, ...ds[i].stewardIds]);
+        const shared = ds[j].stewardIds.filter(x => ai.has(x)).length;
+        const ak='ds|'+ds[i].id, bk='ds|'+ds[j].id;
+        if (shared >= S.minShared && g.hasNode(ak) && g.hasNode(bk))
+          tryEdge(g, ak, bk, { label:shared+' people', weight:shared, color:COL.edge });
+      }
+  }
+
+  // ── DEGREE-BASED SIZE ────────────────────────────────
+  g.forEachNode(n => {
+    const deg = g.degree(n);
+    g.setNodeAttribute(n, 'size', Math.max(4, Math.min(26, 4 + deg * 1.5)));
+  });
+
+  // ── COMMUNITIES ──────────────────────────────────────
+  S.communities = detectCommunities(g);
+
+  // ── COLORS ───────────────────────────────────────────
+  applyColors(g);
+  return g;
+}
+
+function nodeKey(id, g) {
+  // Try to find which prefix (ds| or p| or org|) matches the id in the graph
+  for (const pref of ['p|','ds|','org|']) {
+    const k = pref + id;
+    if (g.hasNode(k)) return k;
+  }
+  if (g.hasNode(id)) return id;
+  return null;
+}
+
+function applyColors(g) {
+  g.forEachNode((n, a) => {
+    let col;
+    if (S.color === 'type')      col = COL[a.ntype] || COL.dataset;
+    else if (S.color === 'community') col = COL.comm[(S.communities[n]||0) % COL.comm.length];
+    else col = riskToColor(a.riskScore) || COL[a.ntype] || COL.dataset;
+    g.setNodeAttribute(n, 'color', col);
+  });
+}
+
+function tryEdge(g, a, b, attrs) {
+  if (g.hasNode(a) && g.hasNode(b) && !g.hasEdge(a,b) && !g.hasEdge(b,a))
+    g.addEdge(a, b, attrs);
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════
+function render() {
+  if (S.renderer) { S.renderer.kill(); S.renderer = null; }
+  const g = buildGraph();
+  S.graph = g;
+  setSt('running','COMPUTING LAYOUT...');
+
+  requestAnimationFrame(() => {
+    applyLayout(g);
+    setSt('done','READY');
+
+    const ppl=allPeople(), ds=allDatasets();
+    qs('#sn').textContent=g.order; qs('#se').textContent=g.size;
+    qs('#sd').textContent=ds.length; qs('#sp').textContent=ppl.length;
+    qs('#fn').textContent=g.order; qs('#fe').textContent=g.size;
+
+    const renderer = new Sigma(g, qs('#smount'), {
+      renderEdgeLabels:false, defaultEdgeColor:COL.edge,
+      labelFont:'Space Mono,monospace', labelSize:11, labelColor:{color:'#b8cce4'},
+      minCameraRatio:.05, maxCameraRatio:15,
+      nodeReducer:(n,d)=>({...d, label:S.labels?(d.label||''):''}),
+      edgeReducer:(e,d)=>({...d, size:Math.max(.4,Math.min(4,(d.weight||1)*.6))}),
+    });
+
+    const tip = qs('#tip');
+
+    renderer.on('enterNode', ({node}) => {
+      const a = g.getNodeAttributes(node);
+      let h = `<div class="ttl">${esc(a.label||node)}</div>`;
+      h += `<div class="tr"><span class="tk">Type</span><span class="tv">${a.ntype}</span></div>`;
+      if (a.schema) h += `<div class="tr"><span class="tk">Schema</span><span class="tv">${a.schema}</span></div>`;
+      h += `<div class="tr"><span class="tk">Degree</span><span class="tv">${g.degree(node)}</span></div>`;
+      if (a.jobTitle) h += `<div class="tr"><span class="tk">Role</span><span class="tv">${esc(a.jobTitle)}</span></div>`;
+      if (a.org) h += `<div class="tr"><span class="tk">Org ID</span><span class="tv">${esc(a.org)}</span></div>`;
+      if (a.knowledgeLevel) h += `<div class="tr"><span class="tk">Knowledge</span><span class="tv">${esc(a.knowledgeLevel)}</span></div>`;
+      if (a.riskText) h += `<div class="tr"><span class="tk">Risk Level</span><span class="tv">${esc(a.riskText)}</span></div>`;
+      const score = a.rstarScore ?? a.riskScore ?? a.sepRisk;
+      if (score != null) {
+        const col = riskToColor(score) || '#888';
+        h += `<div class="trbar"><span class="tk">${a.rstarScore!=null?'R* Score':a.ntype==='person'?'Sep. Risk':'Risk Score'}</span><div class="ttrack"><div class="tfill" style="width:${Math.min(100,score)}%;background:${col}"></div></div><span class="tv">${Math.round(score)}</span></div>`;
+      }
+      if (S.communities[node] != null)
+        h += `<div class="tr"><span class="tk">Community</span><span class="tv">${S.communities[node]}</span></div>`;
+      tip.innerHTML = h;
+      tip.style.display = 'block';
+    });
+
+    renderer.on('leaveNode', () => { tip.style.display='none'; });
+    qs('#smount').addEventListener('mousemove', e => {
+      tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY+14)+'px';
+    });
+
+    renderer.on('clickNode', ({node}) => {
+      g.forEachNode(n => g.setNodeAttribute(n,'highlighted',false));
+      g.setNodeAttribute(node,'highlighted',true);
+      g.forEachNeighbor(node, n => g.setNodeAttribute(n,'highlighted',true));
+      renderer.refresh();
+    });
+    renderer.on('clickStage', () => {
+      g.forEachNode(n => g.setNodeAttribute(n,'highlighted',false));
+      renderer.refresh();
+    });
+
+    S.renderer = renderer;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  FILE HANDLING
+// ═══════════════════════════════════════════════════════
+function handleFiles(files) {
+  const arr = [...files].filter(f => f.name.endsWith('.json'));
+  if (!arr.length) return;
+  let done = 0;
+  arr.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      let entry = { name:file.name, people:[], datasets:[], orgs:[], edges:[], schema:'?' };
+      try {
+        // Strip JS-style comments using a state machine that respects string boundaries
+        // (naive regex would wrongly strip // inside URLs like https://...)
+        const raw = JSON.parse(stripComments(e.target.result));
+        entry = { name: file.name, _rawData: raw, ...parseFile(raw, file.name) };
+        addRow(file.name, entry.datasets.length, entry.people.length, entry.schema, true);
+      } catch(ex) {
+        const msg = ex.message || String(ex);
+        addRow(file.name, 0, 0, '?', false, msg);
+        console.warn('Parse error:', file.name, ex);
+      }
+      S.files.push(entry);
+      qs('#ff').textContent = S.files.length;
+      if (++done === arr.length) activate();
+    };
+    reader.readAsText(file);
+  });
+}
+
+function addRow(name, ds, p, schema, ok, errMsg) {
+  const schvCls = {'v1':'v1','v2':'v2','v2x':'v2','v3':'v3','v4':'v4'}[schema]||'';
+  const el = document.createElement('div');
+  el.className = 'fi';
+  el.innerHTML = `<span class="${ok?'ok':'er'}">${ok?'✓':'✗'}</span>`
+    + `<span class="nm" title="${esc(name)}">${esc(name)}</span>`
+    + `<span class="schema-tag ${schvCls}">${schema}</span>`
+    + `<span class="mt">${ok?ds+'d '+p+'p':'ERR'}</span>`;
+  qs('#flist').appendChild(el);
+  if (!ok && errMsg) logError(name, errMsg);
+}
+
+function activate() {
+  qs('#splash').classList.add('gone');
+  ['pstats','pview','pact','pleg'].forEach(id => qs('#'+id).classList.remove('hide'));
+  qs('#hdot').classList.add('live');
+  const n = S.files.length;
+  qs('#hbadge').textContent = n+' FILE'+(n>1?'S':'');
+  qs('#hbadge').className = 'hbadge ok';
+  const schemas = [...new Set(S.files.map(f=>f.schema))].join(', ');
+  qs('#hsub').textContent = `${n} files · schemas: ${schemas}`;
+  render();
+}
+
+// ═══════════════════════════════════════════════════════
+//  GEXF EXPORT
+// ═══════════════════════════════════════════════════════
+function exportGEXF() {
+  if (!S.graph) return;
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<gexf xmlns="http://www.gexf.net/1.3">\n  <graph defaultedgetype="undirected">\n    <nodes>\n`;
+  S.graph.forEachNode((n,a)=>{
+    xml += `      <node id="${esc(n)}" label="${esc(a.label||'')}" x="${(a.x||0).toFixed(2)}" y="${(a.y||0).toFixed(2)}" size="${(a.size||6).toFixed(1)}" color="${a.color||''}"/>\n`;
+  });
+  xml += `    </nodes>\n    <edges>\n`;
+  let ei=0;
+  S.graph.forEachEdge((e,a,src,tgt)=>{
+    xml += `      <edge id="e${ei++}" source="${esc(src)}" target="${esc(tgt)}" weight="${a.weight||1}"/>\n`;
+  });
+  xml += `    </edges>\n  </graph>\n</gexf>`;
+  const url = URL.createObjectURL(new Blob([xml],{type:'text/xml'}));
+  Object.assign(document.createElement('a'),{href:url,download:'kg_export.gexf'}).click();
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════
+const qs = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+function lerp(a, b, t) {
+  const h = s => [parseInt(s.slice(1,3),16),parseInt(s.slice(3,5),16),parseInt(s.slice(5,7),16)];
+  const [ar,ag,ab_]=h(a),[br,bg_,bb]=h(b);
+  return '#'+[ar+(br-ar)*t,ag+(bg_-ag)*t,ab_+(bb-ab_)*t].map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+}
+function setSt(cls,txt){const el=qs('#lst');el.className=cls;el.textContent=txt;}
+
+// ═══════════════════════════════════════════════════════
+//  EVENT WIRING
+// ═══════════════════════════════════════════════════════
+['dragenter','dragover'].forEach(ev => document.body.addEventListener(ev, e => {
+  e.preventDefault();
+  qs('#sdrop').classList.add('dza'); qs('#scard').classList.add('dza');
+}));
+['dragleave','drop'].forEach(() => {});
+document.body.addEventListener('dragleave', () => {
+  qs('#sdrop').classList.remove('dza'); qs('#scard').classList.remove('dza');
+});
+document.body.addEventListener('drop', e => {
+  e.preventDefault();
+  qs('#sdrop').classList.remove('dza'); qs('#scard').classList.remove('dza');
+  handleFiles(e.dataTransfer.files);
+});
+
+qs('#sdrop').addEventListener('click', () => qs('#fpick').click());
+qs('#fpick').addEventListener('change', e => { handleFiles(e.target.files); e.target.value=''; });
+
+qs('#vtog').addEventListener('click', e => {
+  const btn = e.target.closest('[data-v]'); if (!btn) return;
+  qs('#vtog').querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); S.view=btn.dataset.v; if (S.files.length) render();
+});
+qs('#ctog').addEventListener('click', e => {
+  const btn = e.target.closest('[data-c]'); if (!btn) return;
+  qs('#ctog').querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); S.color=btn.dataset.c;
+  if (S.graph) { applyColors(S.graph); S.renderer&&S.renderer.refresh(); }
+});
+qs('#cklabels').addEventListener('change', e => {
+  S.labels=e.target.checked;
+  if (S.graph) { S.graph.forEachNode((n,a)=>S.graph.setNodeAttribute(n,'label',S.labels?(a.label||''):'')); S.renderer&&S.renderer.refresh(); }
+});
+qs('#ckorgs').addEventListener('change', e => { S.orgs=e.target.checked; if (S.files.length) render(); });
+qs('#sshared').addEventListener('input', e => {
+  S.minShared=+e.target.value; qs('#sval').textContent='≥ '+S.minShared;
+  if (S.files.length && S.view!=='bipartite') render();
+});
+qs('#brelayout').addEventListener('click', ()=>{ if (S.files.length) render(); });
+qs('#bclearerr').addEventListener('click', ()=>{ const l=qs('#errlog'); l.querySelector('.errlog-body').innerHTML=''; l.classList.add('hide'); });
+qs('#breset').addEventListener('click', ()=>{ S.renderer&&S.renderer.getCamera().animatedReset(); });
+qs('#bexport').addEventListener('click', exportGEXF);
+qs('#bbundle').addEventListener('click', exportBundle);
+document.addEventListener('keydown', e => {
+  if (e.target.tagName==='INPUT') return;
+  if (e.key==='l'||e.key==='L') { if (S.files.length) render(); }
+  if (e.key==='r'||e.key==='R') { S.renderer&&S.renderer.getCamera().animatedReset(); }
+});
+
+
+// ═══════════════════════════════════════════════════════
+//  AUTO-LOAD from data.json (GitHub Pages hosting)
+// ═══════════════════════════════════════════════════════
+async function autoLoad() {
+  const msgEl = qs('#splash-msg');
+  try {
+    const resp = await fetch('./data.json');
+    if (!resp.ok) {
+      // No data.json — pure drag-drop mode
+      if (msgEl) msgEl.textContent = 'Drop JSON files to begin, or add a data.json bundle.';
+      return;
+    }
+    const bundle = await resp.json();
+    const files  = bundle.files || [];
+
+    if (msgEl) msgEl.textContent = `Loading ${files.length} shared records...`;
+
+    let loaded = 0;
+    for (const item of files) {
+      try {
+        const parsed = parseFile(item.data, item.filename || item.name || 'record');
+        S.files.push({ name: item.filename || item.name, _rawData: item.data, ...parsed, autoLoaded: true });
+        loaded++;
+      } catch(e) {
+        console.warn('Auto-load parse error:', item.filename, e);
+      }
+    }
+
+    if (loaded > 0) {
+      // Update file list to show auto-loaded badge
+      const flist = qs('#flist');
+      const summary = document.createElement('div');
+      summary.className = 'fi';
+      summary.style.cssText = 'background:rgba(56,189,248,.08);border:1px solid var(--border2)';
+      const ppl  = allPeople().length;
+      const ds   = allDatasets().length;
+      summary.innerHTML = `<span class="ok">●</span>`
+        + `<span class="nm">Auto-loaded: ${loaded} files</span>`
+        + `<span class="mt">${ds}ds ${ppl}p</span>`;
+      flist.appendChild(summary);
+
+      qs('#ff').textContent  = loaded;
+      qs('#hbadge').textContent = loaded + ' FILE' + (loaded>1?'S':'');
+      qs('#hbadge').className   = 'hbadge ok';
+      const schemas = [...new Set(S.files.map(f=>f.schema))].join(', ');
+      qs('#hsub').textContent   = `${loaded} shared files · schemas: ${schemas} · drop files to add private data`;
+
+      if (bundle.anonymized) {
+        qs('#hsub').textContent += ' · ANONYMIZED';
+      }
+
+      activate();
+    } else {
+      if (msgEl) msgEl.textContent = 'Drop JSON files to begin.';
+    }
+
+  } catch(e) {
+    console.log('No data.json found — running in drag-drop only mode');
+    if (msgEl) msgEl.textContent = 'Drop JSON files to begin.';
+  }
+}
+
+// When user adds private files on top of auto-loaded data, show indicator
+const _origActivate = activate;
+function activate() {
+  _origActivate();
+  const hasPrivate = S.files.some(f => !f.autoLoaded);
+  const badge = qs('#hprivate');
+  if (badge) badge.style.display = hasPrivate ? '' : 'none';
+}
+
+window.addEventListener('load', () => {
+  autoLoad();
+  const missing=[];
+  if (typeof graphology==='undefined') missing.push('graphology');
+  if (typeof Sigma==='undefined') missing.push('Sigma');
+  if (typeof d3==='undefined') missing.push('d3');
+  if (missing.length) {
+    qs('#hbadge').textContent='CDN FAIL: '+missing.join(', ');
+    qs('#hbadge').className='hbadge warn';
+    qs('#hsub').textContent='Check internet connection — libraries failed to load';
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  SAFE COMMENT STRIPPER (respects string literals)
+// ═══════════════════════════════════════════════════════
+function stripComments(str) {
+  let out = '', inStr = false, i = 0;
+  while (i < str.length) {
+    const c = str[i];
+    if (inStr) {
+      out += c;
+      if (c === '\\') { out += str[++i] || ''; }  // escaped char
+      else if (c === '"') inStr = false;
+    } else if (c === '"') {
+      inStr = true; out += c;
+    } else if (c === '/' && str[i+1] === '/') {
+      // Line comment — skip to end of line
+      while (i < str.length && str[i] !== '\n') i++;
+    } else if (c === '/' && str[i+1] === '*') {
+      // Block comment — skip to */
+      i += 2;
+      while (i < str.length && !(str[i] === '*' && str[i+1] === '/')) i++;
+      i++;
+    } else {
+      out += c;
+    }
+    i++;
+  }
+  return out;
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  VISIBLE ERROR LOG
+// ═══════════════════════════════════════════════════════
+function logError(filename, msg) {
+  const log = qs('#errlog');
+  if (log.classList.contains('hide')) log.classList.remove('hide');
+  const el = document.createElement('div');
+  el.style.cssText = 'padding:4px 0;border-bottom:1px solid var(--border);font-size:10px;';
+  el.innerHTML = '<span style="color:var(--red);font-family:var(--mono)">'
+    + esc(filename.slice(0,30)) + '</span><br>'
+    + '<span style="color:var(--dim)">' + esc(msg.slice(0,120)) + '</span>';
+  log.querySelector('.errlog-body').appendChild(el);
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  EXPORT data.json BUNDLE (for GitHub Pages hosting)
+// ═══════════════════════════════════════════════════════
+function exportBundle() {
+  if (!S.files.length) { alert('No files loaded — drag in your approved JSON files first.'); return; }
+
+  const ppl = allPeople(), ds = allDatasets();
+  const bundle = {
+    version: '1.0',
+    built: new Date().toISOString(),
+    anonymized: false,
+    file_count: S.files.length,
+    people_count: ppl.length,
+    dataset_count: ds.length,
+    files: S.files.map(f => ({
+      filename: f.name,
+      people_count: f.people.length,
+      dataset_count: f.datasets.length,
+      data: f._rawData || null,
+    })),
+  };
+
+  const missing = bundle.files.filter(f => !f.data).length;
+  if (missing > 0) {
+    // Warn but still export what we have
+    console.warn(missing + ' files missing raw data — they will be excluded from bundle');
+    bundle.files = bundle.files.filter(f => f.data);
+  }
+
+  const json = JSON.stringify(bundle, null, 2);
+  const url  = URL.createObjectURL(new Blob([json], {type:'application/json'}));
+  Object.assign(document.createElement('a'), {href:url, download:'data.json'}).click();
+  URL.revokeObjectURL(url);
+
+  // Show confirmation
+  const btn = qs('#bbundle');
+  const orig = btn.textContent;
+  btn.textContent = '✓ data.json downloaded!';
+  btn.style.color = 'var(--green)';
+  btn.style.borderColor = 'var(--green)';
+  setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 3000);
+}
+
+</script>
+</body>
+</html>

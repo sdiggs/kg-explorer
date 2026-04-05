@@ -1,0 +1,8 @@
+# KG Explorer — private data (never commit these)
+private/
+*.private.json
+
+# Python
+__pycache__/
+*.pyc
+.DS_Store
