@@ -749,7 +749,7 @@ function handleFiles(files) {
       }
       S.files.push(entry);
       qs('#ff').textContent = S.files.length;
-      if (++done === arr.length) activate();
+      if (++done === arr.length) { activate(); updatePrivateBadge(); }
     };
     reader.readAsText(file);
   });
@@ -926,15 +926,6 @@ async function autoLoad() {
   }
 }
 
-// When user adds private files on top of auto-loaded data, show indicator
-const _origActivate = activate;
-function activate() {
-  _origActivate();
-  const hasPrivate = S.files.some(f => !f.autoLoaded);
-  const badge = qs('#hprivate');
-  if (badge) badge.style.display = hasPrivate ? '' : 'none';
-}
-
 window.addEventListener('load', () => {
   autoLoad();
   const missing=[];
@@ -1034,6 +1025,13 @@ function exportBundle() {
   btn.style.color = 'var(--green)';
   btn.style.borderColor = 'var(--green)';
   setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 3000);
+}
+
+
+function updatePrivateBadge() {
+  const hasPrivate = S.files.some(f => !f.autoLoaded);
+  const badge = qs('#hprivate');
+  if (badge) badge.style.display = hasPrivate ? '' : 'none';
 }
 
 </script>
